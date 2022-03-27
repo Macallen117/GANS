@@ -81,7 +81,7 @@ fixed_noise = torch.randn((batch_size, z_dim)).to(device)
 transforms = transforms.Compose(
     [transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,)),]
 )
-dataset = datasets.MNIST(root="dataset/", transform=transforms, download=True)
+dataset = datasets.MNIST(root="../dataset/", transform=transforms, download=True)
 dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
 # set optimizer to adam
@@ -146,7 +146,7 @@ for epoch in range(num_epochs):
         D_losses.append(lossD.item())
 
         # Check how the generator is doing by saving G's output on fixed_noise
-        if (iters % 500 == 0) or ((epoch == num_epochs - 1) and (batch_idx == len(dataloader) - 1)):
+        if (iters % 5000 == 0) or ((epoch == num_epochs - 1) and (batch_idx == len(dataloader) - 1)):
             with torch.no_grad():
                 fake = gen(fixed_noise).detach().cpu()
                 fake = fake.view(32, 1, 28, 28)
@@ -168,9 +168,20 @@ for epoch in range(num_epochs):
             plt.axis("off")
             plt.title("Fake Images")
             vutils.save_image(vutils.make_grid(fake.to(device)[:32]),  '%s/fake_samples_epoch_%03d.png' %
-            ('./dataset/result', epoch),
+            ('../dataset/MNIST/result', epoch),
                 normalize=True)
             plt.imshow(np.transpose(vutils.make_grid(fake.to(device)[:32], padding=5, normalize=True).cpu(),
                                     (1, 2, 0)))
             plt.show()
+
+            # plot the loss
+            if iters % 10000 == 0:
+                plt.figure(figsize=(10, 5))
+                plt.title("Generator and Discriminator Loss During Training")
+                plt.plot(G_losses, label="G")
+                plt.plot(D_losses, label="D")
+                plt.xlabel("iterations")
+                plt.ylabel("Loss")
+                plt.legend()
+                plt.show()
         iters += 1
