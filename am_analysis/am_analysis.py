@@ -1321,7 +1321,7 @@ def plot_spectrogram_data(spectrogram_data, ix=None, t_range=None, f_range=None,
         ax.yaxis.set_major_locator(ticker.AutoLocator())
         ax.yaxis.set_minor_locator(ticker.AutoMinorLocator())
              
-        plt.xlabel('fime (s)')
+        plt.xlabel('time (s)')
         plt.ylabel('frequency (Hz)')
     
     
@@ -1344,7 +1344,8 @@ def plot_spectrogram_data(spectrogram_data, ix=None, t_range=None, f_range=None,
             clim = np.array([np.mean(X_plot), np.amax(X_plot)])  
     
         pmesh.set_clim(vmin=clim[0], vmax=clim[1])
-    
+
+
         plt.colorbar()
         plt.title(title_str)
         plt.draw()
@@ -1373,7 +1374,7 @@ def plot_spectrogram_data(spectrogram_data, ix=None, t_range=None, f_range=None,
                              spectrogram_data['power_spectrogram'][:, :, i_channel], 
                              spectrogram_data['time_axis'], 
                              spectrogram_data['freq_axis'], 
-                             spectrogram_data['channel_names'][i_channel],
+                             spectrogram_data['channel_names'],
                              t_range, f_range, c_range, c_map)    
     
 

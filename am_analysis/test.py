@@ -8,81 +8,54 @@ import matplotlib.pyplot as plt
 import am_analysis as ama
 
 
-def first_run():
-    global n_cycles
-    global x
-    global x_spectrogram
-    global channel_names
-    global fs
-    global parameters
-    global ix_channel
-    global fig
-    global gc_map
+def plot_signal(x, fs, name = None, label = None):
+    time_vector = np.arange(x.shape[0]) / fs
 
-    fig.clear()
+    plt.plot(time_vector, x, label = label, linewidth=1)
+    plt.xlabel('time (s)')
+    plt.xlim([time_vector.min(), time_vector.max()])
 
-    n_cycles = round(parameters['n_cycles'])
+    if name is None:
+        name = 'Signal-01'
 
-    # compute and plot complete spectrogram
-    x_spectrogram = ama.wavelet_spectrogram(x, fs, n_cycles, channel_names=[channel_names[ix_channel]])
-    x_wavelet_modspec = ama.wavelet_modulation_spectrogram(x, fs, n_cycles=n_cycles, fft_factor_x=2,
-                                                           channel_names=[channel_names[ix_channel]])
-    plt.subplot(4, 2, (6, 8))
-    ama.plot_modulation_spectrogram_data(x_wavelet_modspec, f_range=parameters['freq_range'],
-                                         modf_range=parameters['mfreq_range'], c_range=parameters['mfreq_color'],
-                                         c_map=gc_map)
+    plt.title(name)
+    plt.legend()
+    plt.draw()
 
-    # plot spectrogram for full signal
-    plt.subplot(4, 2, (3, 4))
-    ama.plot_spectrogram_data(x_spectrogram, f_range=parameters['freq_range'], c_range=parameters['freq_color'],
-                              c_map=gc_map)
-
-
-    # plot full signal
-    plt.subplot(4, 2, (1, 2))
-    ama.plot_signal(x, fs, channel_names[ix_channel])
-
-    plt.colorbar()
-    plt.show()
-    return
-
-
-def explore_wavelet_ama_gui(x, fs_arg, channel_names_arg=None, c_map='viridis'):
-    # Global variables
-    global ix_channel
-    global n_channels
-    global cid
-    global fig
-    global parameters
-    global gc_map
-    global n_cycles
-    global name
-    global fs
-    global channel_names
-
-    fs = fs_arg
-    channel_names = channel_names_arg
-    gc_map = c_map
-
-    # % Amplitude Modulation Analysis
+def explore_wavelet_ama_gui(x, fs_arg, name_arg=None, c_map='viridis'):
     # Default Modulation Analysis parameters
     parameters = {}
-    parameters['n_cycles'] = 6  # number of cycles (for Complex Morlet)
+    parameters['n_cycles'] = 9  # number of cycles (for Complex Morlet)
     parameters['freq_range'] = None  # limits [min, max] for the conventional frequency axis (Hz)
     parameters['mfreq_range'] = None  # limits [min, max] for the modulation frequency axis (Hz)
     parameters['freq_color'] = None  # limits [min, max] for the power in Spectrogram (dB)
     parameters['mfreq_color'] = None  # limits [min, max] for the power in Modulation Spectrogram (dB)
 
-    # initial channel and segment
-    ix_channel = 0
+    n_cycles = round(parameters['n_cycles'])
+    fs = fs_arg
+    name = name_arg
+    gc_map = c_map
 
-    # Live GUI
-    fig = plt.figure()
-    first_run()
+    # compute and plot complete spectrogram
+    x_spectrogram = ama.wavelet_spectrogram(x, fs, n_cycles, channel_names=name)
+
+    # plot spectrogram for full signal
+    plt.subplot(1, 1, 1)
+    ama.plot_spectrogram_data(x_spectrogram)
+
+    # plot full signal
+    # plt.subplot(1, 1, 1)
+    # plot_signal(x, fs, name, label = 'raw signal')
+    #
+    # # plot reproduced full signal
+    # x_r = ama.iwavelet_spectrogram(x_spectrogram)
+    # plt.subplot(1, 1, 1)
+    # plot_signal(x_r, fs, name, label = 'reproduced signal')
 
 
 if __name__ == '__main__':
-    os.chdir('../dataset/headerRemoved')
+    os.chdir('../data/SmallMisalignment08_09/headerRemoved')
+    fs = 2000.0
 
     for csvFilename in os.listdir('.'):
         if not csvFilename.endswith('.csv'):
@@ -100,7 +73,6 @@ if __name__ == '__main__':
 
         x_list, y_list = [row[0] for row in real], [row[1] for row in real]
 
-    x = np.array(y_list)
-    fs = 240.0
-    # Wavelet Modulation Spectrogram
-    explore_wavelet_ama_gui(x, fs, ['signal1'])
+        # Wavelet Modulation Spectrogram
+        explore_wavelet_ama_gui(np.array(y_list), fs, csvFilename[0:4])
+        plt.show()
