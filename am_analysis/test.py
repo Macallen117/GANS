@@ -8,19 +8,11 @@ import matplotlib.pyplot as plt
 import am_analysis as ama
 
 
-def plot_signal(x, fs, name = None, label = None):
-    time_vector = np.arange(x.shape[0]) / fs
+def plot_signal(ax, x, name, label):
+    ax.plot(x, label = label, linewidth=1)
+    ax.set_xlabel('time (s)')
+    ax.set_title(name)
 
-    plt.plot(time_vector, x, label = label, linewidth=1)
-    plt.xlabel('time (s)')
-    plt.xlim([time_vector.min(), time_vector.max()])
-
-    if name is None:
-        name = 'Signal-01'
-
-    plt.title(name)
-    plt.legend()
-    plt.draw()
 
 def explore_wavelet_ama_gui(x, fs_arg, name_arg=None, c_map='viridis'):
     # Default Modulation Analysis parameters
@@ -40,22 +32,20 @@ def explore_wavelet_ama_gui(x, fs_arg, name_arg=None, c_map='viridis'):
     x_spectrogram = ama.wavelet_spectrogram(x, fs, n_cycles, channel_names=name)
 
     # plot spectrogram for full signal
-    plt.subplot(1, 1, 1)
     ama.plot_spectrogram_data(x_spectrogram)
 
+    f, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
     # plot full signal
-    # plt.subplot(1, 1, 1)
-    # plot_signal(x, fs, name, label = 'raw signal')
-    #
-    # # plot reproduced full signal
-    # x_r = ama.iwavelet_spectrogram(x_spectrogram)
-    # plt.subplot(1, 1, 1)
-    # plot_signal(x_r, fs, name, label = 'reproduced signal')
+    plot_signal(ax1, x.squeeze(), name, label = 'raw signal')
+
+    # plot reproduced full signal
+    x_r = ama.iwavelet_spectrogram(x_spectrogram)
+    plot_signal(ax2, x_r.squeeze(), name, label = 'reproduced signal')
 
 
 if __name__ == '__main__':
-    os.chdir('../data/SmallMisalignment08_09/headerRemoved')
-    fs = 2000.0
+    os.chdir('../data/MA_1D_CYCLE')
+    fs = 4000.0
 
     for csvFilename in os.listdir('.'):
         if not csvFilename.endswith('.csv'):
@@ -63,16 +53,16 @@ if __name__ == '__main__':
         print('open ' + csvFilename + '...')
 
         # Read the CSV file
-        real = []
+        rows = []
         csvFileObj = open(csvFilename)
         readerObj = csv.reader(csvFileObj)
         for row in readerObj:
-            x = float(row[0])
-            y = float(row[1])
-            real.append([x, y])
+            row = list(map(float, row))
+            rows.append(row)
 
-        x_list, y_list = [row[0] for row in real], [row[1] for row in real]
+        x_list, y_list = [row[0:-1] for row in rows], [row[-1] for row in rows]
 
         # Wavelet Modulation Spectrogram
-        explore_wavelet_ama_gui(np.array(y_list), fs, csvFilename[0:4])
+        explore_wavelet_ama_gui(np.array(x_list[0]), fs, csvFilename[8:-4])
+        plt.legend()
         plt.show()

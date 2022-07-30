@@ -9,16 +9,23 @@ import matplotlib.pyplot as plt
 from torchvision import transforms
 from PIL import Image
 
-from WGAN.wgan import Generator
+from WGAN.model import Generator
 from GAN.dataset import get_dataloader
 from GAN.config import Config
 
 
-def showGeneratedFrame(label_name):
-    dataloader = get_dataloader(dataset='fake', label_name=label_name, batch_size=3)
-    data, labels, classes = next(iter(dataloader))
+def showGeneratedFrame(label_name, ax, line_width, color):
+    dataloader = get_dataloader(dataset='fake', label_name=label_name, batch_size=32)
+    data, labels = next(iter(dataloader))
     rgb = (random.random(), random.random(), random.random())
-    ax.plot(data[0].view(-1), label=label_name, c=rgb, linewidth=line_width)
+    ax.plot(data[5].view(-1), label=label_name, c=color, linewidth=line_width)
+
+
+def showOriginalFrame(label_name, ax, line_width, color):
+    dataloader = get_dataloader(dataset='real', label_name=label_name, batch_size=32)
+    data, labels = next(iter(dataloader))
+    rgb = (random.random(), random.random(), random.random())
+    ax.plot(data[5].view(-1), label=label_name, c=color, linewidth=line_width)
 
 def generateFakeImg(label_name, batch_size):
     dataloader = get_dataloader(dataset='fake', label_name=label_name, batch_size=batch_size)
@@ -67,8 +74,6 @@ def generateRealImg(label_name, batch_size):
     elif label_name.startswith('R'):
         test_img_path = config.test_img_path+'/R'
 
-
-
     for count, i in enumerate(real):
         fig = plt.figure(frameon=False)
         plt.plot(i)
@@ -83,86 +88,77 @@ def generateRealImg(label_name, batch_size):
         im_gray = cv2.resize(im_gray, (224, 224), interpolation=cv2.INTER_LANCZOS4)
         cv2.imwrite(filename, im_gray)
 
-def generateData(label_name, batch_size):
+def generateData(label_name, batch_size, path):
     netG_path = 'WGAN/netG/'
     netG_path = os.path.join(netG_path, 'netG_{}.pt'.format(label_name))
-
     g.load_state_dict(torch.load(netG_path))
-    fixed_noise = torch.randn(batch_size, nz, 1)
-    fake = g(fixed_noise).to(config.device)
 
-    label_id = config.label_to_id[label_name]
-    label_id = torch.tensor(label_id, device=config.device)
-    fake = torch.cat((fake, label_id.repeat(batch_size, 1, 1)), 2)
-    class_id = config.class_to_id[label_name]
-    class_id = torch.tensor(class_id, device=config.device)
-    fake = torch.cat((fake, class_id.repeat(batch_size, 1, 1)), 2)
-    fake = fake.squeeze()
+    dataloader = get_dataloader(dataset='real', label_name=label_name, batch_size=32)
+    real = next(iter(dataloader))[0]
 
-    fake_np = fake.detach().cpu().numpy()
-    fake_df = pd.DataFrame(fake_np)
-    fake_df.to_csv(config.fake_path, mode='a', index=False, header=False)
+    count = 0
+    fig, (ax1, ax2) = plt.subplots(2, sharey=True, sharex=True)
+    while count < batch_size:
+        fixed_noise = torch.randn(1, nz, 1)
+        fake = g(fixed_noise).to(config.device)
 
+        diff_sum = 0
+        for i in range(real.shape[0]):
+            diff = np.array(fake.detach().cpu().view(-1)) - np.array(real[i].detach().cpu().view(-1))
+            diff = diff ** 2
+            diff_sum += diff
+        diff_sum = np.sum(diff_sum) / real.shape[0]
+        if(diff_sum < 0.7):
+            print(diff_sum)
+            count += 1
+
+            ax1.plot(fake.detach().cpu().view(-1), label=label_name, c = 'r', linewidth=0.5)
+
+            target_id = config.class_to_id[label_name]
+            target_id = torch.tensor(target_id, device=config.device)
+            fake = torch.cat((fake, target_id.repeat(1, 1, 1)), 1)
+            fake = fake.squeeze(2)
+            fake_np = fake.detach().cpu().numpy()
+            fake_df = pd.DataFrame(fake_np)
+            fake_df.to_csv(path, index=False, header=False, mode='a')
+
+    for i in range(real.shape[0]):
+        ax2.plot(real[i].detach().cpu().view(-1), label=label_name, c='b', linewidth=0.5)
+    plt.show()
 
 if __name__ == '__main__':
     config = Config()
     g = Generator()
     batch_size = 30
     nz = 100
-    num = 0
-    sample_size = 3
 
-    # generateData('L005', batch_size)
-    # generateData('L010', batch_size)
-    # generateData('L015', batch_size)
-    # generateData('L020', batch_size)
-    # generateData('L025', batch_size)
-    # generateData('N', batch_size * 5)
-    # generateData('R005', batch_size)
-    # generateData('R010', batch_size)
-    # generateData('R015', batch_size)
-    # generateData('R020', batch_size)
-    # generateData('R025', batch_size)
+    # generateData('005', batch_size, config.fake_005_cycle_path)
+    # generateData('010', batch_size, config.fake_010_cycle_path)
+    # generateData('015', batch_size, config.fake_015_cycle_path)
+    # generateData('020', batch_size, config.fake_020_cycle_path)
+    # generateData('025', batch_size, config.fake_025_cycle_path)
+    # generateData('N', batch_size * 5, config.fake_N_cycle_path)
 
-    # generateFakeImg('L005', batch_size)
-    # generateFakeImg('L010', batch_size)
-    # generateFakeImg('L015', batch_size)
-    # generateFakeImg('L020', batch_size)
-    # generateFakeImg('L025', batch_size)
-    # generateFakeImg('N', batch_size * 5)
-    # generateFakeImg('R005', batch_size)
-    # generateFakeImg('R010', batch_size)
-    # generateFakeImg('R015', batch_size)
-    # generateFakeImg('R020', batch_size)
-    # generateFakeImg('R025', batch_size)
+    fig, (ax1, ax2) = plt.subplots(1, 2, sharey = True, sharex= True)
+    line_width = 0.5
+    ## display all kinds of synthetic signals
+    showGeneratedFrame('005', ax1, line_width, color = 'r')
+    showGeneratedFrame('010', ax1, line_width, color = 'b')
+    showGeneratedFrame('015', ax1, line_width, color = 'g')
+    showGeneratedFrame('020', ax1, line_width, color = 'c')
+    showGeneratedFrame('025', ax1, line_width, color = 'm')
+    showGeneratedFrame('N', ax1, line_width, color = 'y')
+    ax1.set_title('synthetic signal')
+    ax1.legend()
 
-    generateRealImg('L005', sample_size)
-    generateRealImg('L010', sample_size)
-    generateRealImg('L015', sample_size)
-    generateRealImg('L020', sample_size)
-    generateRealImg('L025', sample_size)
-    generateRealImg('N', sample_size)
-    generateRealImg('R005', sample_size)
-    generateRealImg('R010', sample_size)
-    generateRealImg('R015', sample_size)
-    generateRealImg('R020', sample_size)
-    generateRealImg('R025', sample_size)
+    ## display all kinds of original signals
+    showOriginalFrame('005', ax2, line_width, color = 'r')
+    showOriginalFrame('010', ax2, line_width, color = 'b')
+    showOriginalFrame('015', ax2, line_width, color = 'g')
+    showOriginalFrame('020', ax2, line_width, color = 'c')
+    showOriginalFrame('025', ax2, line_width, color = 'm')
+    showOriginalFrame('N', ax2, line_width, color = 'y')
+    ax2.set_title('original signal')
+    ax2.legend()
+    plt.show()
 
-    fig, ax = plt.subplots()
-    line_width = 0.75
-
-    # showGeneratedFrame('L005')
-    # showGeneratedFrame('L010')
-    # showGeneratedFrame('L015')
-    # showGeneratedFrame('L020')
-    # showGeneratedFrame('L025')
-    # showGeneratedFrame('N')
-    # showGeneratedFrame('R005')
-    # showGeneratedFrame('R010')
-    # showGeneratedFrame('R015')
-    # showGeneratedFrame('R020')
-    # showGeneratedFrame('R025')
-
-    ax.set_title('fake signal')
-    ax.legend()
-    # plt.show()

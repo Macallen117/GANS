@@ -14,6 +14,8 @@ class Meter:
         self.confusion = torch.zeros((n_classes, n_classes))
     
     def update(self, x, y, loss):
+        # print(x.shape)
+        # print(y.shape)
         x = np.argmax(x.detach().cpu().numpy(), axis=1)
         y = np.argmax(y.detach().cpu().numpy(), axis=1)
         # print('output class: ')

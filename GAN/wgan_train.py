@@ -3,8 +3,24 @@ import torch
 import torch.optim as optim
 import numpy as np
 import matplotlib.pyplot as plt
-from WGAN.wgan import *
+import copy
+import seaborn as sns
+from pylab import rcParams
+from matplotlib import rc
+import sklearn.datasets
+from sklearn import preprocessing
+from sklearn.model_selection import train_test_split, KFold
+from sklearn.metrics import accuracy_score, auc, f1_score, precision_score, recall_score, confusion_matrix, ConfusionMatrixDisplay
+from sklearn.datasets import make_classification
+from sklearn.model_selection import cross_val_score
+from sklearn.metrics import classification_report
+
+import optuna
+from optuna.trial import TrialState
+
+from WGAN.model import *
 from GAN.dataset import *
+from config import *
 
 class Trainer:
     def __init__(
@@ -40,7 +56,8 @@ class Trainer:
     
         self.lossD = []
         self.lossG = []
-    
+        self.best_diff = 10000.0
+
     def _one_epoch(self):
         for step, (data, labels) in enumerate(self.dataloader):
             # training netD
@@ -72,70 +89,69 @@ class Trainer:
         return step, loss_disc.item(), loss_gen.item()
 
     def run(self):
-        for epoch in range(self.num_epochs):
+        for epoch in range(self.num_epochs + 1):
             step, loss_disc, loss_gen = self._one_epoch()
             self.lossG.append(loss_gen)
             self.lossD.append(loss_disc)
 
             fake = self.netG(self.fixed_noise).detach().cpu()
             real = next(iter(self.dataloader))[0]
+
             diff = np.array(fake.view(-1)) - np.array(real.view(-1))
             diff = np.sum(diff ** 2) / self.batch_size
-            print('[%d/%d][%d/%d]\tloss_netD: %.4f\tloss_gen: %.4f\tdiff: %.4f'
+            print('[%d/%d][%d/%d]\tloss_netD: %.4f\tloss_netG: %.4f\tdiff: %.4f'
                   % (epoch, self.num_epochs, step, len(self.dataloader), loss_disc, loss_gen, diff))
 
-            # plot training process
-            if epoch % 100 == 0:
+            # plot training process and save model
+            if diff < 1 and diff <= self.best_diff:
                 with torch.no_grad():
                     fake = self.netG(self.fixed_noise).detach().cpu()
                     real = next(iter(self.dataloader))[0]
                     fig, ax = plt.subplots()
+                    ax.set_title(f'{self.label}{" mean square error"} (loss: {np.around(diff, 2)})')
                     line_width = 0.5
                     ax.plot(fake[0].view(-1), label='fake', c='blue', linewidth=line_width)
                     ax.plot(real[0].view(-1), label='real', c='red', linewidth=line_width)
                     ax.legend()
                     plt.show()
-            # plot the loss
-            if epoch % 500 == 0:
-                plt.figure(figsize=(10, 5))
-                plt.title("Generator and Discriminator Loss During Training")
-                plt.plot(self.lossG, label="G")
-                plt.plot(self.lossD, label="D")
-                plt.xlabel("iterations")
-                plt.ylabel("Loss")
-                plt.legend()
-                plt.show()
-            # save model
-            if epoch % 500 == 0:
-                netD_path = 'WGAN/netD/'
-                netG_path = 'WGAN/netG/'
-                netD_path = os.path.join(netD_path, 'netD_{}_{}.pt'.format(self.label,epoch))
-                netG_path = os.path.join(netG_path, 'netG_{}_{}.pt'.format(self.label,epoch))
-                torch.save(self.netD.state_dict(), netD_path)
-                torch.save(self.netG.state_dict(), netG_path)
 
-def seed_everything(seed: int):
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed(seed)
+                    self.best_diff = diff
+                    netD_path = 'WGAN/netD/'
+                    netG_path = 'WGAN/netG/'
+                    netD_path = os.path.join(netD_path, 'netD_{}.pt'.format(self.label))
+                    netG_path = os.path.join(netG_path, 'netG_{}.pt'.format(self.label))
+                    torch.save(self.netD.state_dict(), netD_path)
+                    torch.save(self.netG.state_dict(), netG_path)
+
+
+        print(self.best_diff)
+        # plot the loss
+        plt.figure(figsize=(10, 5))
+        plt.title("Generator and Discriminator Loss During Training")
+        plt.plot(self.lossG, label="G")
+        plt.plot(self.lossD, label="D")
+        plt.xlabel("iterations")
+        plt.ylabel("Loss")
+        plt.legend()
+        plt.show()
 
 if __name__ == '__main__':
-    seed = 2021
-    seed_everything(seed)
-    
-    g = Generator()
+    config = Config()
+    seed_everything(config.seed)
+    nz = 100
+
+    g = Generator(nz)
     d = Discriminator()
 
     trainer = Trainer(
         generator=g,
         discriminator=d,
-        batch_size=3,
-        num_epochs=30000,
+        batch_size=12,
+        num_epochs=6000,
         n_critic=5,
         clip_value=0.005,
-        nz = 100,
-        lr=1e-4,
-        label='L005'
+        nz = nz,
+        lr=5e-4,
+        label='N'
     )
     trainer.run()
