@@ -35,7 +35,7 @@ def getFakeData(label_name, batch_size):
     return fake
 
 
-def visualization_compare_real_fake(label_name, analysis_type):
+def visualization_compare_real_fake(label_name, analysis_type, visualization_type):
     fig, ax = plt.subplots()
     line_width = 1
 
@@ -46,6 +46,9 @@ def visualization_compare_real_fake(label_name, analysis_type):
     fake = getFakeData(label_name, batch_size)
     rgb = (random.random(), random.random(), random.random())
     ax.plot(fake[0].view(-1).detach().cpu(), label="Synthetic", c=rgb, linewidth=line_width)
+    plt.show()
+
+
 
     ori_data = real.detach().cpu()
     generated_data = fake.detach().cpu()
@@ -63,28 +66,26 @@ def visualization_compare_real_fake(label_name, analysis_type):
 
     colors = ["r" for i in range(real_no)] + ["g" for i in range(fake_no)]
 
+    if visualization_type == '3d':
+        ax = plt.axes(projection='3d')
+    elif visualization_type == '2d':
+        fig, ax = plt.subplots()
     if analysis_type == 'pca':
-        # PCA Analysis
-        pca = PCA(n_components=3)
+        pca = PCA(n_components=2)
         pca.fit(prep_data)
         pca_results = pca.transform(prep_data)
         pca_hat_results = pca.transform(prep_data_hat)
 
-        # Plotting
-        # f, ax = plt.subplots()
-        ax = plt.figure().gca(projection='3d')
+        # ax = plt.figure().gca(projection='3d')
         ax.scatter(pca_results[:, 0],
                    pca_results[:, 1],
-                   pca_results[:, 2],
                    c=colors[:real_no],
                    label="Original")
         ax.scatter(pca_hat_results[:, 0],
                    pca_hat_results[:, 1],
-                   pca_hat_results[:, 2],
                    c=colors[real_no:],
                    label="Synthetic")
 
-        ax.legend()
         plt.title('PCA plot')
         plt.xlabel('x-pca')
         plt.ylabel('y_pca')
@@ -92,27 +93,20 @@ def visualization_compare_real_fake(label_name, analysis_type):
         plt.show()
 
     elif analysis_type == 'tsne':
-        # Do t-SNE Analysis together
         prep_data_final = np.concatenate((prep_data, prep_data_hat), axis=0)
 
-        # TSNE anlaysis
-        tsne = TSNE(n_components=3)
+        tsne = TSNE(n_components=2, random_state=config.seed, n_jobs=-1,
+                        init='random', learning_rate='auto')
         tsne_results = tsne.fit_transform(prep_data_final)
 
-        # Plotting
-        ax = plt.figure().gca(projection='3d')
         ax.scatter(tsne_results[:real_no, 0],
-                    tsne_results[:real_no, 1],
-                    tsne_results[:real_no, 2],
-                    c=colors[:real_no],
-                    label="Original")
+                   tsne_results[:real_no, 1],
+                   c=colors[:real_no],
+                   label="Original")
         ax.scatter(tsne_results[real_no:, 0],
-                    tsne_results[real_no:, 1],
-                    tsne_results[real_no:, 2],
-                    c=colors[real_no:],
-                    label="Synthetic")
-
-        ax.legend()
+                   tsne_results[real_no:, 1],
+                   c=colors[real_no:],
+                   label="Synthetic")
 
         plt.title('t-SNE plot')
         plt.xlabel('x-tsne')
@@ -140,30 +134,30 @@ def visualization_one_kind(label_name, batch_size, analysis_type, ax):
     rgb = np.array([rgb])
 
     if analysis_type == 'pca':
-        pca = PCA(n_components=3, random_state=config.seed)
+        pca = PCA(n_components=2, random_state=config.seed)
         pca_results = pca.fit_transform(data)
 
         ax.scatter(pca_results[:, 0],
                    pca_results[:, 1],
-                   pca_results[:, 2],
                    c=rgb,
                    label=label_name)
 
     elif analysis_type == 'tsne':
-        tsne = TSNE(n_components=3, random_state=config.seed, n_jobs=-1,
+        tsne = TSNE(n_components=2, random_state=config.seed, n_jobs=-1,
                     init='random', learning_rate='auto')
         tsne_results = tsne.fit_transform(data)
 
         ax.scatter(tsne_results[:, 0],
                    tsne_results[:, 1],
-                   tsne_results[:, 2],
                    c=rgb,
                    label=label_name)
 
-def visualization_compare_all_kinds(analysis_type):
+def visualization_compare_all_kinds(analysis_type, visualization_type):
     batch_size = 30
-    ax = plt.axes(projection='3d')
-
+    if visualization_type == '3d':
+        ax = plt.axes(projection='3d')
+    elif visualization_type == '2d':
+        fig, ax = plt.subplots()
     visualization_one_kind('005', batch_size, analysis_type, ax)
     visualization_one_kind('010', batch_size, analysis_type, ax)
     visualization_one_kind('015', batch_size, analysis_type, ax)
@@ -172,7 +166,7 @@ def visualization_compare_all_kinds(analysis_type):
     visualization_one_kind('N', batch_size, analysis_type, ax)
 
     plt.title(analysis_type)
-    plt.axis('off')
+    # plt.axis('off')
     plt.legend()
     plt.show()
 
@@ -180,8 +174,14 @@ if __name__ == '__main__':
     config = Config()
     batch_size = 32
 
-    # visualization_compare_real_fake('005', 'pca')
-    # visualization_compare_real_fake('005', 'tsne')
+    # visualization_compare_real_fake('005', 'pca', '3d')
+    # visualization_compare_real_fake('005', 'tsne', '3d')
 
-    visualization_compare_all_kinds('pca')
-    visualization_compare_all_kinds('tsne')
+    # visualization_compare_real_fake('005', 'pca', '2d')
+    # visualization_compare_real_fake('005', 'tsne', '2d')
+
+    # visualization_compare_all_kinds('pca', '3d')
+    visualization_compare_all_kinds('tsne', '3d')
+
+    # visualization_compare_all_kinds('pca', '2d')
+    visualization_compare_all_kinds('tsne', '2d')
