@@ -185,7 +185,7 @@ class GeneratorTest(nn.Module):
 
 if __name__ == '__main__':
     noise = torch.randn(12, 100, 1)
-    g = GeneratorTest(100)
-    d = DiscriminatorTest()
+    g = Generator(100)
+    d = Discriminator()
     gen = g(noise)
     d(gen)

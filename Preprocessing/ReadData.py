@@ -1,32 +1,10 @@
 import csv
-
-import torch
 import os
 import copy
 import random
 import numpy as np
 import pandas as pd
-import seaborn as sns
-from pylab import rcParams
-import matplotlib.pyplot as plt
-from matplotlib import rc
 from sklearn import preprocessing
-from sklearn.model_selection import train_test_split, KFold
-from sklearn.metrics import accuracy_score, auc, f1_score, precision_score, recall_score, confusion_matrix, ConfusionMatrixDisplay
-from sklearn.datasets import make_classification
-from sklearn.svm import SVC
-from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.naive_bayes import GaussianNB
-from sklearn.neural_network import MLPClassifier
-
-
-from torch import nn, optim
-from torchsummary import summary
-from torchvision import transforms
-from torch.utils.data import TensorDataset, DataLoader, ConcatDataset
-
-import torch.nn.functional as F
 
 
 def remove_header():
@@ -245,9 +223,9 @@ if __name__ == '__main__':
     # df = create_circle(df)
     # df.to_csv(real_020_cycle_path,index=False,header=False)
 
-    df = readRawData(real_025_path)
-    df = create_circle(df)
-    df.to_csv(real_025_cycle_path,index=False,header=False)
+    # df = readRawData(real_025_path)
+    # df = create_circle(df)
+    # df.to_csv(real_025_cycle_path,index=False,header=False)
 
     # df = readRawData(real_N_path)
     # df = create_circle(df)

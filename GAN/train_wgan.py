@@ -147,11 +147,11 @@ if __name__ == '__main__':
         generator=g,
         discriminator=d,
         batch_size=12,
-        num_epochs=6000,
+        num_epochs=5000,
         n_critic=5,
-        clip_value=0.005,
+        clip_value=0.01,  # 0.005
         nz = nz,
-        lr=5e-4,
-        label='N'
+        lr=1e-4,
+        label='025'
     )
     trainer.run()

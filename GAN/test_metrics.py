@@ -48,8 +48,6 @@ def visualization_compare_real_fake(label_name, analysis_type, visualization_typ
     ax.plot(fake[0].view(-1).detach().cpu(), label="Synthetic", c=rgb, linewidth=line_width)
     plt.show()
 
-
-
     ori_data = real.detach().cpu()
     generated_data = fake.detach().cpu()
 
@@ -116,6 +114,18 @@ def visualization_compare_real_fake(label_name, analysis_type, visualization_typ
 
 
 def visualization_one_kind(label_name, batch_size, analysis_type, ax):
+    if label_name == 'N':
+        label_show = 'Normal'
+    elif label_name == '005':
+        label_show = 'left 0.05mm'
+    elif label_name == '010':
+        label_show = 'left 0.10mm'
+    elif label_name == '015':
+        label_show = 'left 0.15mm'
+    elif label_name == '020':
+        label_show = 'left 0.20mm'
+    elif label_name == '025':
+        label_show = 'left 0.25mm'
     real = getRealData(label_name, batch_size).detach().cpu()
     fake = getFakeData(label_name, batch_size).detach().cpu()
 
@@ -128,7 +138,7 @@ def visualization_one_kind(label_name, batch_size, analysis_type, ax):
     fake = np.reshape(fake[:, :, :], [-1, seq_len])
 
     data = np.concatenate((real, fake), axis=0)
-    # print(data.shape)
+    print(data.shape)
 
     rgb = (random.random(), random.random(), random.random())
     rgb = np.array([rgb])
@@ -140,7 +150,7 @@ def visualization_one_kind(label_name, batch_size, analysis_type, ax):
         ax.scatter(pca_results[:, 0],
                    pca_results[:, 1],
                    c=rgb,
-                   label=label_name)
+                   label=label_show)
 
     elif analysis_type == 'tsne':
         tsne = TSNE(n_components=2, random_state=config.seed, n_jobs=-1,
@@ -150,7 +160,7 @@ def visualization_one_kind(label_name, batch_size, analysis_type, ax):
         ax.scatter(tsne_results[:, 0],
                    tsne_results[:, 1],
                    c=rgb,
-                   label=label_name)
+                   label=label_show)
 
 def visualization_compare_all_kinds(analysis_type, visualization_type):
     batch_size = 30
@@ -180,8 +190,8 @@ if __name__ == '__main__':
     # visualization_compare_real_fake('005', 'pca', '2d')
     # visualization_compare_real_fake('005', 'tsne', '2d')
 
-    # visualization_compare_all_kinds('pca', '3d')
-    visualization_compare_all_kinds('tsne', '3d')
+    visualization_compare_all_kinds('pca', '2d')
+    visualization_compare_all_kinds('pca', '3d')
 
-    # visualization_compare_all_kinds('pca', '2d')
-    visualization_compare_all_kinds('tsne', '2d')
+    # visualization_compare_all_kinds('tsne', '3d')
+    # visualization_compare_all_kinds('tsne', '2d')
